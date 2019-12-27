@@ -29,7 +29,17 @@ import Helper._
 
 object Tests {
   val listSuite = suite("AWS list buckets")(
-    testM("list") {
+    testM("list all buckets") {
+      println(s"Using Region: ${region} and Endpoint: ${endpoint}")
+      val list = for {
+        s3   <- createClient(region, endpoint).mapError(_ => new IOException("S3 client reation failed"))
+        list <- listBuckets(s3)
+        _    = println(list)
+      } yield list
+
+      assertM(list.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
+    } @@ timeout(10.seconds),
+    testM("list all objects in a specific bucket") {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val list = for {
         s3   <- createClient(region, endpoint).mapError(_ => new IOException("S3 client reation failed"))
@@ -40,9 +50,21 @@ object Tests {
       assertM(list.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
     } @@ timeout(10.seconds)
   )
+
+  val delSuite = suite("AWS delete object")(
+    testM("delete object in a specific bucket by key") {
+      println(s"Using Region: ${region}, Endpoint: ${endpoint}, Bucket: ${bucket}")
+      val res = for {
+        s3   <- createClient(region, endpoint).mapError(_ => new IOException("S3 client reation failed"))
+        resp <- deleteObject(s3, bucket, key)
+        _    = println(s">>>>>>> ${resp}")
+      } yield resp
+      assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
+    } @@ timeout(10.seconds)
+  )
 }
 
-object BaseSpec extends DefaultRunnableSpec(suite("AWS Spec")(Tests.listSuite))
+object BaseSpec extends DefaultRunnableSpec(suite("AWS Spec")(Tests.listSuite, Tests.delSuite))
 
 object Helper {
   import scala.collection.JavaConverters._
@@ -62,5 +84,8 @@ object Helper {
   val region: Region = Region.US_EAST_1
   val env            = System.getenv()
   val endpoint       = env.get("AWS_ENDPOINT")
+  val bucket         = env.get("AWS_BUCKET")
+
+  val key = "2c713cae-2593-11ea-b06d-6b64da20b1de"
 
 }
