@@ -28,22 +28,25 @@ import java.io.IOException
 import Helper._
 
 object Tests {
-  val listSuite = suite("AWS list buckets")(
+  val listBucketsSuite = suite("AWS list buckets")(
     testM("list all buckets") {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
-      val list = for {
-        s3   <- createClient(region, endpoint).mapError(_ => new IOException("S3 client reation failed"))
+      val res = for {
+        s3   <- createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
         list <- listBuckets(s3)
         _    = println(list)
       } yield list
 
-      assertM(list.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ timeout(10.seconds),
+      assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
+    } @@ timeout(10.seconds)
+  )
+
+  val listObjectsSuite = suite("AWS list objects in a single bucket")(
     testM("list all objects in a specific bucket") {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val list = for {
-        s3   <- createClient(region, endpoint).mapError(_ => new IOException("S3 client reation failed"))
-        list <- listBuckets(s3)
+        s3   <- createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+        list <- listBucket(s3, bucket)
         _    = println(list)
       } yield list
 
@@ -51,11 +54,11 @@ object Tests {
     } @@ timeout(10.seconds)
   )
 
-  val delSuite = suite("AWS delete object")(
+  val delSuiteSuite = suite("AWS delete object")(
     testM("delete object in a specific bucket by key") {
       println(s"Using Region: ${region}, Endpoint: ${endpoint}, Bucket: ${bucket}")
       val res = for {
-        s3   <- createClient(region, endpoint).mapError(_ => new IOException("S3 client reation failed"))
+        s3   <- createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
         resp <- deleteObject(s3, bucket, key)
         _    = println(s">>>>>>> ${resp}")
       } yield resp
@@ -64,7 +67,7 @@ object Tests {
   )
 }
 
-object BaseSpec extends DefaultRunnableSpec(suite("AWS Spec")(Tests.listSuite, Tests.delSuite))
+object BaseSpec extends DefaultRunnableSpec(suite("AWS Spec")(Tests.listObjectsSuite))
 
 object Helper {
   import scala.collection.JavaConverters._

@@ -32,6 +32,8 @@ import software.amazon.awssdk.services.s3.model.{
   DeleteObjectRequest,
   DeleteObjectResponse,
   ListBucketsResponse,
+  ListObjectsV2Request,
+  ListObjectsV2Response,
   PutObjectRequest,
   PutObjectResponse
 }
@@ -88,6 +90,24 @@ object S3 {
       handleResponse(
         s3AsyncClient
           .deleteBucket(DeleteBucketRequest.builder().bucket(name).build()),
+        callback
+      )
+    }
+
+  /**
+   * List the bucket objects.
+   *
+   * @param s3AsyncClient - the client for async access to S3
+   * @param name          - the name of the bucket
+   */
+  def listBucket(
+    s3AsyncClient: S3AsyncClient,
+    bucketName: String
+  ): Task[ListObjectsV2Response] =
+    IO.effectAsync[Throwable, ListObjectsV2Response] { callback =>
+      handleResponse(
+        s3AsyncClient
+          .listObjectsV2(ListObjectsV2Request.builder().bucket(bucketName).build()),
         callback
       )
     }
