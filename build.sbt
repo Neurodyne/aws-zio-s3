@@ -8,31 +8,24 @@ lazy val `aws-zio-s3` =
     .enablePlugins(AutomateHeaderPlugin)
     .settings(settings)
     .settings(
-      libraryDependencies ++= Seq(
-        library.awsS3Async,
-        library.zio,
-        library.scalaCheck % Test,
-        library.scalaTest  % Test
-      )
+      zioDeps,
+      awsDeps
     )
 
 // *****************************************************************************
 // Library dependencies
 // *****************************************************************************
 
-lazy val library =
-  new {
-    object Version {
-      val awsS3      = "2.10.35"
-      val zio        = "1.0.0-RC17"
-      val scalaCheck = "1.14.0"
-      val scalaTest  = "3.0.8"
-    }
-    val awsS3Async = "software.amazon.awssdk" % "s3"          % Version.awsS3
-    val zio        = "dev.zio"                %% "zio"        % Version.zio
-    val scalaCheck = "org.scalacheck"         %% "scalacheck" % Version.scalaCheck
-    val scalaTest  = "org.scalatest"          %% "scalatest"  % Version.scalaTest
-  }
+val zioVersion = "1.0.0-RC17"
+val awsVersion = "2.10.41"
+
+lazy val awsDeps = libraryDependencies ++= Seq("software.amazon.awssdk" % "s3" % awsVersion)
+
+lazy val zioDeps = libraryDependencies ++= Seq(
+  "dev.zio" %% "zio"          % zioVersion,
+  "dev.zio" %% "zio-test"     % zioVersion % "test",
+  "dev.zio" %% "zio-test-sbt" % zioVersion % "test"
+)
 
 // *****************************************************************************
 // Settings
@@ -60,7 +53,8 @@ lazy val commonSettings =
       "UTF-8"
     ),
     Compile / unmanagedSourceDirectories := Seq((Compile / scalaSource).value),
-    Test / unmanagedSourceDirectories := Seq((Test / scalaSource).value)
+    Test / unmanagedSourceDirectories := Seq((Test / scalaSource).value),
+    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
 
 lazy val scalafmtSettings =

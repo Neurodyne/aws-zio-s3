@@ -18,6 +18,7 @@ package com.github.branislavlazic.aws.zio.s3
 
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
+import java.net.URI
 
 import zio.{ IO, Task, ZIO }
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -41,19 +42,25 @@ object S3 {
    * Create an async S3 client.
    *
    * @param region                 - The AWS region
-   * @param awsCredentialsProvider - credentials loader
    */
   def createClient(
     region: Region,
-    awsCredentialsProvider: AwsCredentialsProvider
-  ): Task[S3AsyncClient] =
-    Task {
-      S3AsyncClient
-        .builder()
-        .region(region)
-        .credentialsProvider(awsCredentialsProvider)
-        .build()
-    }
+    endpoint: String = ""
+  ): Task[S3AsyncClient] = {
+    val client =
+      if (endpoint.isEmpty())
+        S3AsyncClient
+          .builder()
+          .region(region)
+          .build()
+      else
+        S3AsyncClient
+          .builder()
+          .region(region)
+          .endpointOverride(URI.create(endpoint))
+          .build()
+    Task(client)
+  }
 
   /**
    * Create S3 bucket with the given name.
