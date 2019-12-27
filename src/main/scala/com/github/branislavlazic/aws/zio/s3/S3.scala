@@ -38,7 +38,19 @@ import software.amazon.awssdk.services.s3.model.{
   PutObjectResponse
 }
 
+import scala.concurrent.ExecutionContext
+
+// import scala.concurrent.Future
+// import scala.compat.java8.FutureConverters._
+// import scala.concurrent.java8.FuturesConvertersImpl.P
+import software.amazon.awssdk.services.s3.model.S3Object
+
+// import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
+
 object S3 {
+
+  // def updFuture[T](fut: CompletableFuture[T])(implicit ec: ExecutionContext) = fut.toScala
 
   /**
    * Create an async S3 client.
@@ -104,13 +116,30 @@ object S3 {
     s3AsyncClient: S3AsyncClient,
     bucketName: String
   ): Task[ListObjectsV2Response] =
-    IO.effectAsync[Throwable, ListObjectsV2Response] { callback =>
-      handleResponse(
-        s3AsyncClient
-          .listObjectsV2(ListObjectsV2Request.builder().bucket(bucketName).build()),
-        callback
-      )
-    }
+    for {
+      resp <- IO.effect(s3AsyncClient.listObjectsV2(ListObjectsV2Request.builder().bucket(bucketName).build()))
+      list <- IO.effectAsync[Throwable, ListObjectsV2Response] { callback =>
+               handleResponse(
+                 resp,
+                 callback
+               )
+             }
+    } yield list
+
+  def listBucket0(
+    s3AsyncClient: S3AsyncClient,
+    bucketName: String
+  ): Task[List[S3Object]] =
+    for {
+      resp <- IO.effect(s3AsyncClient.listObjectsV2(ListObjectsV2Request.builder().bucket(bucketName).build()))
+      list <- IO.effectAsync[Throwable, ListObjectsV2Response] { callback =>
+               handleResponse(
+                 resp,
+                 callback
+               )
+             }
+      out = list.contents
+    } yield out.asScala.toList
 
   /**
    * Upload an object with a given key on S3 bucket.

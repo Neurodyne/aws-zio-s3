@@ -46,7 +46,7 @@ object Tests {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val list = for {
         s3   <- createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        list <- listBucket(s3, bucket)
+        list <- listBucket0(s3, bucket)
         _    = println(list)
       } yield list
 
