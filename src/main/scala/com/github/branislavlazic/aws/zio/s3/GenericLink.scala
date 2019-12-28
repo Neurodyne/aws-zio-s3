@@ -18,7 +18,7 @@ package com.github.branislavlazic.aws.zio.s3
 
 import java.util.concurrent.CompletableFuture
 
-import zio.{ Task, ZIO }
+import zio.{ Task }
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.{
@@ -28,8 +28,7 @@ import software.amazon.awssdk.services.s3.model.{
   GetObjectResponse,
   ListBucketsResponse,
   ListObjectsV2Response,
-  PutObjectResponse,
-  S3Object
+  PutObjectResponse
 }
 
 trait GenericLink {

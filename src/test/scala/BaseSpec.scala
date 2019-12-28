@@ -45,7 +45,6 @@ object Tests {
 object BaseSpec extends DefaultRunnableSpec(suite("AWS Spec")(Tests.bucketsSuite))
 
 object Helper {
-  import scala.collection.JavaConverters._
   import java.nio.file.{ Files }
   import java.io.File
 

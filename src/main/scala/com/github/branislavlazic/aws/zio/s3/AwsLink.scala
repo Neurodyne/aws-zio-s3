@@ -21,7 +21,7 @@ import java.util.concurrent.CompletableFuture
 import java.net.URI
 import scala.collection.JavaConverters._
 
-import zio.{ IO, Task, ZIO }
+import zio.{ IO, Task }
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.{
@@ -37,14 +37,13 @@ import software.amazon.awssdk.services.s3.model.{
   ListObjectsV2Request,
   ListObjectsV2Response,
   PutObjectRequest,
-  PutObjectResponse,
-  S3Object
+  PutObjectResponse
 }
 
 class AwsLink extends GenericLink {
 
   val service = new GenericLink.Service[Any] {
-    def createClient(region: Region, endpoint: String = ""): Task[S3AsyncClient] = {
+    def createClient(region: Region, endpoint: String): Task[S3AsyncClient] = {
       val client =
         if (endpoint.isEmpty())
           S3AsyncClient
