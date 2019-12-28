@@ -47,7 +47,23 @@ object Tests {
       val list = for {
         s3   <- createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
         list <- listBucket0(s3, bucket)
-        _    = println(list)
+        keys = list.map(_.key)
+        _    = println(keys)
+      } yield list
+
+      assertM(list.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
+    } @@ timeout(10.seconds)
+  )
+
+  val listSingleObjectSuite = suite("AWS list objects in a single bucket")(
+    testM("list all objects in a specific bucket") {
+      println(s"Using Region: ${region} and Endpoint: ${endpoint}")
+      val list = for {
+        s3   <- createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+        list <- listObject(s3, bucket)
+        // list <- listBucketStats(s3, bucket)
+        // list <- listKeys(s3, bucket)
+        // _    = println(list)
       } yield list
 
       assertM(list.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
@@ -67,7 +83,9 @@ object Tests {
   )
 }
 
-object BaseSpec extends DefaultRunnableSpec(suite("AWS Spec")(Tests.listObjectsSuite))
+// object BaseSpec extends DefaultRunnableSpec(suite("AWS Spec")(Tests.listBucketsSuite, Tests.listObjectsSuite))
+object BaseSpec extends DefaultRunnableSpec(suite("AWS Spec")(Tests.listSingleObjectSuite))
+// object BaseSpec extends DefaultRunnableSpec(suite("AWS Spec")(Tests.listObjectsSuite))
 
 object Helper {
   import scala.collection.JavaConverters._

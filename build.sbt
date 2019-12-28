@@ -8,6 +8,7 @@ lazy val `aws-zio-s3` =
     .enablePlugins(AutomateHeaderPlugin)
     .settings(settings)
     .settings(
+      commonDeps,
       zioDeps,
       awsDeps
     )
@@ -25,6 +26,10 @@ lazy val zioDeps = libraryDependencies ++= Seq(
   "dev.zio" %% "zio"          % zioVersion,
   "dev.zio" %% "zio-test"     % zioVersion % "test",
   "dev.zio" %% "zio-test-sbt" % zioVersion % "test"
+)
+
+lazy val commonDeps = libraryDependencies ++= Seq(
+//  "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.0"
 )
 
 // *****************************************************************************

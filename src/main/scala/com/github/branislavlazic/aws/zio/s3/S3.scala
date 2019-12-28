@@ -16,12 +16,14 @@
 
 package com.github.branislavlazic.aws.zio.s3
 
-import java.nio.file.Path
+import java.nio.file.{ Path, Paths }
 import java.util.concurrent.CompletableFuture
 import java.net.URI
 
 import zio.{ IO, Task, ZIO }
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.{
@@ -31,12 +33,18 @@ import software.amazon.awssdk.services.s3.model.{
   DeleteBucketResponse,
   DeleteObjectRequest,
   DeleteObjectResponse,
+  GetObjectRequest,
+  GetObjectResponse,
   ListBucketsResponse,
   ListObjectsV2Request,
   ListObjectsV2Response,
   PutObjectRequest,
   PutObjectResponse
 }
+
+// import software.amazon.awssdk.services.s3.model.{Response}
+import software.amazon.awssdk.core.sync.ResponseTransformer
+import software.amazon.awssdk.core.async.AsyncResponseTransformer
 
 import scala.concurrent.ExecutionContext
 
@@ -47,6 +55,8 @@ import software.amazon.awssdk.services.s3.model.S3Object
 
 // import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+import software.amazon.awssdk.auth.credentials.AwsCredentials
 
 object S3 {
 
@@ -126,10 +136,10 @@ object S3 {
              }
     } yield list
 
-  def listBucket0(
+  def listBucketStats(
     s3AsyncClient: S3AsyncClient,
     bucketName: String
-  ): Task[List[S3Object]] =
+  ): Task[ListObjectsV2Response] =
     for {
       resp <- IO.effect(s3AsyncClient.listObjectsV2(ListObjectsV2Request.builder().bucket(bucketName).build()))
       list <- IO.effectAsync[Throwable, ListObjectsV2Response] { callback =>
@@ -138,8 +148,64 @@ object S3 {
                  callback
                )
              }
+    } yield list
+
+  def listBucket0(
+    s3AsyncClient: S3AsyncClient,
+    bucketName: String
+  ): Task[List[S3Object]] =
+    for {
+      resp <- IO.effect(
+               s3AsyncClient
+                 .listObjectsV2(ListObjectsV2Request.builder().bucket(bucketName).maxKeys(10).prefix("media").build())
+             )
+      list <- IO.effectAsync[Throwable, ListObjectsV2Response] { callback =>
+               handleResponse(
+                 resp,
+                 callback
+               )
+             }
       out = list.contents
     } yield out.asScala.toList
+
+  def listKeys(
+    s3AsyncClient: S3AsyncClient,
+    bucketName: String
+  ): Task[List[String]] =
+    for {
+      resp <- IO.effect(
+               s3AsyncClient
+                 .listObjectsV2(ListObjectsV2Request.builder().bucket(bucketName).build())
+             )
+      list <- IO.effectAsync[Throwable, ListObjectsV2Response] { callback =>
+               handleResponse(
+                 resp,
+                 callback
+               )
+             }
+      keys = list.contents.asScala.map(_.key).toList
+      // keys = list.buckets.stream
+    } yield keys
+
+  def listObject(
+    s3AsyncClient: S3AsyncClient,
+    bucketName: String
+    // ): Task[List[S3Object]] =
+  ): Task[Boolean] =
+    for {
+      resp <- IO.effect(s3AsyncClient.listObjectsV2(ListObjectsV2Request.builder().bucket(bucketName).build()))
+      list <- IO.effectAsync[Throwable, ListObjectsV2Response] { callback =>
+               handleResponse(
+                 resp,
+                 callback
+               )
+             }
+      out = list.contents.contains("2c713cae-2593-11ea-b06d-6b64da20b1de")
+      tmp = list.contents.listIterator.asScala.toIterable // .contains("media/uploads")
+      _   = tmp.foreach(t => println(t.key()))
+
+      // _   = println(out.size)
+    } yield out //.asScala.toList
 
   /**
    * Upload an object with a given key on S3 bucket.
@@ -162,6 +228,23 @@ object S3 {
         callback
       )
     }
+
+  // def getObject(
+  //   s3AsyncClient: S3AsyncClient,
+  //   bucketName: String,
+  //   key: String
+  // ): Task[GetObjectResponse] = {
+  //   val req = GetObjectRequest.builder().bucket(bucketName).key(key).build()
+
+  //   IO.effectAsync[Throwable, GetObjectResponse] { callback =>
+  //     handleResponse(
+  //       s3AsyncClient
+  //       // .getObject(req, ResponseTransformer.toFile(Paths.get("multiPartKey"))),
+  //         .getObject(req, AsyncResponseTransformer.toFile(Paths.get("myfile.out"))),
+  //       callback
+  //     )
+  //   }
+  // }
 
   /**
    * Delete an object with a given key on S3 bucket.
