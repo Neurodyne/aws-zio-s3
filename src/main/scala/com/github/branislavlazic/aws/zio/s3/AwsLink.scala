@@ -42,10 +42,11 @@ import software.amazon.awssdk.services.s3.model.{
   ListObjectsV2Request,
   ListObjectsV2Response,
   PutObjectRequest,
-  PutObjectResponse
+  PutObjectResponse,
+  S3Object
 }
 
-import software.amazon.awssdk.services.s3.model.S3Object
+import software.amazon.awssdk.core.async.AsyncResponseTransformer
 
 final class AwsLink extends GenericLink {
 
@@ -114,6 +115,14 @@ final class AwsLink extends GenericLink {
       IO.effectAsync[Throwable, PutObjectResponse] { callback =>
         handleResponse(
           s3.putObject(PutObjectRequest.builder().bucket(buck).key(key).build(), filePath),
+          callback
+        )
+      }
+
+    def getObject(buck: String, key: String, outFile: String)(implicit s3: S3AsyncClient): Task[GetObjectResponse] =
+      IO.effectAsync[Throwable, GetObjectResponse] { callback =>
+        handleResponse(
+          s3.getObject(GetObjectRequest.builder().bucket(buck).key(key).build(), Paths.get(outFile)),
           callback
         )
       }

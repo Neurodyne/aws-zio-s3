@@ -38,9 +38,9 @@ import software.amazon.awssdk.services.s3.model.{
   ListObjectsV2Request,
   ListObjectsV2Response,
   PutObjectRequest,
-  PutObjectResponse
+  PutObjectResponse,
+  S3Object
 }
-import software.amazon.awssdk.services.s3.model.S3Object
 
 trait GenericLink {
   val service: GenericLink.Service[Any]
@@ -48,15 +48,21 @@ trait GenericLink {
 
 object GenericLink {
   trait Service[R] {
+
+    // Bucket API
+
     def createClient(region: Region, endpoint: String): Task[S3AsyncClient]
     def createBucket(buck: String)(implicit s3: S3AsyncClient): Task[CreateBucketResponse]
     def delBucket(buck: String)(implicit s3: S3AsyncClient): Task[DeleteBucketResponse]
     def listBuckets(buck: String)(implicit s3: S3AsyncClient): Task[ListBucketsResponse]
+
+    // Object API
+
     def listBucketObjects(buck: String)(implicit s3: S3AsyncClient): Task[ListObjectsV2Response]
     def listObjectsKeys(buck: String)(implicit s3: S3AsyncClient): Task[List[String]]
     def lookupObject(buck: String, key: String)(implicit s3: S3AsyncClient): Task[Boolean]
     def putObject(buck: String, key: String, filePath: Path)(implicit s3: S3AsyncClient): Task[PutObjectResponse]
-    // def getObject(buck: String, key: String)(implicit s3: S3AsyncClient): Task[GetObjectResponse]
+    def getObject(buck: String, key: String, outFile: String)(implicit s3: S3AsyncClient): Task[GetObjectResponse]
     def delObject(buck: String, key: String)(implicit s3: S3AsyncClient): Task[DeleteObjectResponse]
 
     def handleResponse[T](
