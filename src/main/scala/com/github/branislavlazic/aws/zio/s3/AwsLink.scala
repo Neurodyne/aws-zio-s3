@@ -16,7 +16,7 @@
 
 package com.github.branislavlazic.aws.zio.s3
 
-import java.nio.file.{ Path, Paths }
+import java.nio.file.{ Paths }
 import java.util.concurrent.CompletableFuture
 import java.net.URI
 import scala.collection.JavaConverters._
@@ -76,7 +76,7 @@ final class AwsLink extends GenericLink {
         )
       }
 
-    def listBuckets(buck: String)(implicit s3: S3AsyncClient): Task[ListBucketsResponse] =
+    def listBuckets(implicit s3: S3AsyncClient): Task[ListBucketsResponse] =
       IO.effectAsync[Throwable, ListBucketsResponse] { callback =>
         handleResponse(s3.listBuckets(), callback)
       }
@@ -104,10 +104,10 @@ final class AwsLink extends GenericLink {
         res  = list.contents.contains(key)
       } yield res
 
-    def putObject(buck: String, key: String, file: Path)(implicit s3: S3AsyncClient): Task[PutObjectResponse] =
+    def putObject(buck: String, key: String, file: String)(implicit s3: S3AsyncClient): Task[PutObjectResponse] =
       IO.effectAsync[Throwable, PutObjectResponse] { callback =>
         handleResponse(
-          s3.putObject(PutObjectRequest.builder().bucket(buck).key(key).build(), file),
+          s3.putObject(PutObjectRequest.builder().bucket(buck).key(key).build(), Paths.get(file)),
           callback
         )
       }

@@ -17,7 +17,6 @@
 package com.github.branislavlazic.aws.zio.s3
 
 import java.util.concurrent.CompletableFuture
-import java.nio.file.{ Path }
 
 import zio.{ Task, ZIO }
 import software.amazon.awssdk.regions.Region
@@ -40,22 +39,69 @@ trait GenericLink {
 object GenericLink {
   trait Service[R] {
 
-    // Bucket API
-
+    /**
+     *
+     * Bucket API
+     *
+     */
+    /**
+     * Create an async S3 client.
+     */
     def createClient(region: Region, endpoint: String): Task[S3AsyncClient]
+
+    /**
+     * Create S3 bucket with the given name.
+     */
     def createBucket(buck: String)(implicit s3: S3AsyncClient): Task[CreateBucketResponse]
+
+    /**
+     * Delete the bucket with the given name.
+     */
     def delBucket(buck: String)(implicit s3: S3AsyncClient): Task[DeleteBucketResponse]
-    def listBuckets(buck: String)(implicit s3: S3AsyncClient): Task[ListBucketsResponse]
 
-    // Object API
+    /**
+     * Obtain a list of all buckets owned by the authenticated sender.
+     */
+    def listBuckets(implicit s3: S3AsyncClient): Task[ListBucketsResponse]
 
+    /**
+     *
+     * Object API
+     *
+     */
+    /**
+     * List all objects in a Bucket
+     */
     def listBucketObjects(buck: String)(implicit s3: S3AsyncClient): Task[ListObjectsV2Response]
+
+    /**
+     * List all object keys in a Bucket
+     */
     def listObjectsKeys(buck: String)(implicit s3: S3AsyncClient): Task[List[String]]
+
+    /**
+     * Look up for an object. True if present
+     */
     def lookupObject(buck: String, key: String)(implicit s3: S3AsyncClient): Task[Boolean]
-    def putObject(buck: String, key: String, file: Path)(implicit s3: S3AsyncClient): Task[PutObjectResponse]
+
+    /**
+     * Put a file with a key into a Bucket
+     */
+    def putObject(buck: String, key: String, file: String)(implicit s3: S3AsyncClient): Task[PutObjectResponse]
+
+    /**
+     * Get a file with a key from a Bucket
+     */
     def getObject(buck: String, key: String, file: String)(implicit s3: S3AsyncClient): Task[GetObjectResponse]
+
+    /**
+     * Delete object by key from a Bucket
+     */
     def delObject(buck: String, key: String)(implicit s3: S3AsyncClient): Task[DeleteObjectResponse]
 
+    /**
+     * Handles S3 Native API call to integrate with Scala
+     */
     def handleResponse[T](
       fut: CompletableFuture[T],
       callback: Task[T] => Unit
