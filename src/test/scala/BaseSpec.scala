@@ -22,18 +22,17 @@ import zio.test._
 import zio.test.Assertion._
 import zio.test.TestAspect._
 
-import S3._
 import java.io.IOException
-
 import Helper._
 
 object Tests {
-  val listBucketsSuite = suite("AWS list buckets")(
+
+  val bucketsSuite = suite("AWS list buckets")(
     testM("list all buckets") {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val res = for {
-        s3   <- createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        list <- listBuckets(s3)
+        s3   <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+        list <- aws.service.listBuckets(s3)
         _    = println(list)
       } yield list
 
@@ -41,51 +40,9 @@ object Tests {
     } @@ timeout(10.seconds)
   )
 
-  val listObjectsSuite = suite("AWS list objects in a single bucket")(
-    testM("list all objects in a specific bucket") {
-      println(s"Using Region: ${region} and Endpoint: ${endpoint}")
-      val list = for {
-        s3   <- createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        list <- listBucket0(s3, bucket)
-        keys = list.map(_.key)
-        _    = println(keys)
-      } yield list
-
-      assertM(list.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ timeout(10.seconds)
-  )
-
-  val listSingleObjectSuite = suite("AWS list objects in a single bucket")(
-    testM("list all objects in a specific bucket") {
-      println(s"Using Region: ${region} and Endpoint: ${endpoint}")
-      val list = for {
-        s3   <- createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        list <- listObject(s3, bucket)
-        // list <- listBucketStats(s3, bucket)
-        // list <- listKeys(s3, bucket)
-        // _    = println(list)
-      } yield list
-
-      assertM(list.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ timeout(10.seconds)
-  )
-
-  val delSuiteSuite = suite("AWS delete object")(
-    testM("delete object in a specific bucket by key") {
-      println(s"Using Region: ${region}, Endpoint: ${endpoint}, Bucket: ${bucket}")
-      val res = for {
-        s3   <- createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        resp <- deleteObject(s3, bucket, key)
-        _    = println(s">>>>>>> ${resp}")
-      } yield resp
-      assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ timeout(10.seconds)
-  )
 }
 
-// object BaseSpec extends DefaultRunnableSpec(suite("AWS Spec")(Tests.listBucketsSuite, Tests.listObjectsSuite))
-object BaseSpec extends DefaultRunnableSpec(suite("AWS Spec")(Tests.listSingleObjectSuite))
-// object BaseSpec extends DefaultRunnableSpec(suite("AWS Spec")(Tests.listObjectsSuite))
+object BaseSpec extends DefaultRunnableSpec(suite("AWS Spec")(Tests.bucketsSuite))
 
 object Helper {
   import scala.collection.JavaConverters._
@@ -94,6 +51,11 @@ object Helper {
 
   import software.amazon.awssdk.regions.Region
 
+  val region: Region = Region.US_EAST_1
+  val env            = System.getenv()
+  val endpoint       = env.get("AWS_ENDPOINT")
+  val bucket         = env.get("AWS_BUCKET")
+
   def createOutFile(dir: String = "./", file: String = "outfile"): File = {
     val outDir = Files.createTempDirectory(dir)
     val path   = outDir.resolve(file)
@@ -101,12 +63,7 @@ object Helper {
     Files.createFile(path).toFile
 
   }
-
-  val region: Region = Region.US_EAST_1
-  val env            = System.getenv()
-  val endpoint       = env.get("AWS_ENDPOINT")
-  val bucket         = env.get("AWS_BUCKET")
-
+  val aws = new AwsLink {}
   val key = "2c713cae-2593-11ea-b06d-6b64da20b1de"
 
 }

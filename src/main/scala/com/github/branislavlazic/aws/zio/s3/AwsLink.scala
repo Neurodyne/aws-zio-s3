@@ -41,7 +41,7 @@ import software.amazon.awssdk.services.s3.model.{
   S3Object
 }
 
-final class AwsLink extends GenericLink {
+class AwsLink extends GenericLink {
 
   val service = new GenericLink.Service[Any] {
     def createClient(region: Region, endpoint: String = ""): Task[S3AsyncClient] = {
