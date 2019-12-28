@@ -20,24 +20,15 @@ import java.util.concurrent.CompletableFuture
 import java.nio.file.{ Path }
 
 import zio.{ Task, ZIO }
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.{
-  CreateBucketRequest,
   CreateBucketResponse,
-  DeleteBucketRequest,
   DeleteBucketResponse,
-  DeleteObjectRequest,
   DeleteObjectResponse,
-  GetObjectRequest,
   GetObjectResponse,
   ListBucketsResponse,
-  ListObjectsV2Request,
   ListObjectsV2Response,
-  PutObjectRequest,
   PutObjectResponse,
   S3Object
 }
@@ -61,8 +52,8 @@ object GenericLink {
     def listBucketObjects(buck: String)(implicit s3: S3AsyncClient): Task[ListObjectsV2Response]
     def listObjectsKeys(buck: String)(implicit s3: S3AsyncClient): Task[List[String]]
     def lookupObject(buck: String, key: String)(implicit s3: S3AsyncClient): Task[Boolean]
-    def putObject(buck: String, key: String, filePath: Path)(implicit s3: S3AsyncClient): Task[PutObjectResponse]
-    def getObject(buck: String, key: String, outFile: String)(implicit s3: S3AsyncClient): Task[GetObjectResponse]
+    def putObject(buck: String, key: String, file: Path)(implicit s3: S3AsyncClient): Task[PutObjectResponse]
+    def getObject(buck: String, key: String, file: String)(implicit s3: S3AsyncClient): Task[GetObjectResponse]
     def delObject(buck: String, key: String)(implicit s3: S3AsyncClient): Task[DeleteObjectResponse]
 
     def handleResponse[T](

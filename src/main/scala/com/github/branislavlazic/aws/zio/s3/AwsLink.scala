@@ -24,11 +24,6 @@ import scala.collection.JavaConverters._
 import zio.{ IO, Task, ZIO }
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.{
   CreateBucketRequest,
   CreateBucketResponse,
@@ -45,8 +40,6 @@ import software.amazon.awssdk.services.s3.model.{
   PutObjectResponse,
   S3Object
 }
-
-import software.amazon.awssdk.core.async.AsyncResponseTransformer
 
 final class AwsLink extends GenericLink {
 
@@ -111,18 +104,18 @@ final class AwsLink extends GenericLink {
         res  = list.contents.contains(key)
       } yield res
 
-    def putObject(buck: String, key: String, filePath: Path)(implicit s3: S3AsyncClient): Task[PutObjectResponse] =
+    def putObject(buck: String, key: String, file: Path)(implicit s3: S3AsyncClient): Task[PutObjectResponse] =
       IO.effectAsync[Throwable, PutObjectResponse] { callback =>
         handleResponse(
-          s3.putObject(PutObjectRequest.builder().bucket(buck).key(key).build(), filePath),
+          s3.putObject(PutObjectRequest.builder().bucket(buck).key(key).build(), file),
           callback
         )
       }
 
-    def getObject(buck: String, key: String, outFile: String)(implicit s3: S3AsyncClient): Task[GetObjectResponse] =
+    def getObject(buck: String, key: String, file: String)(implicit s3: S3AsyncClient): Task[GetObjectResponse] =
       IO.effectAsync[Throwable, GetObjectResponse] { callback =>
         handleResponse(
-          s3.getObject(GetObjectRequest.builder().bucket(buck).key(key).build(), Paths.get(outFile)),
+          s3.getObject(GetObjectRequest.builder().bucket(buck).key(key).build(), Paths.get(file)),
           callback
         )
       }
