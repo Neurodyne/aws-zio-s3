@@ -28,9 +28,7 @@ lazy val zioDeps = libraryDependencies ++= Seq(
   "dev.zio" %% "zio-test-sbt" % zioVersion % "test"
 )
 
-lazy val commonDeps = libraryDependencies ++= Seq(
-//  "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.0"
-)
+lazy val commonDeps = libraryDependencies ++= Seq()
 
 // *****************************************************************************
 // Settings
@@ -93,6 +91,7 @@ lazy val sonatypeSettings =
     publishMavenStyle := true
   )
 
+// Aliases
 addCommandAlias("rel", "reload")
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("fix", "all compile:scalafix test:scalafix")
