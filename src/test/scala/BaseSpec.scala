@@ -27,14 +27,27 @@ import Helper._
 
 object Tests {
 
-  val bucketsSuite = suite("AWS list buckets")(
+  val bucketsSuite = suite("AWS S3 Buckets suite")(
     testM("list all buckets") {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val res = for {
-        s3   <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        list <- aws.service.listBuckets(s3)
-        _    = println(list)
-      } yield list
+        s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+        out <- aws.service.listBuckets(s3)
+        _   = println(out)
+      } yield out
+
+      assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
+    } @@ timeout(10.seconds)
+  )
+
+  val objectsSuite = suite("AWS S3 Objects suite")(
+    testM("lookup an object") {
+      println(s"Using Region: ${region} and Endpoint: ${endpoint}")
+      val res = for {
+        s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+        out <- aws.service.lookupObject(bucket, key)(s3)
+        _   = println(out)
+      } yield out
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
     } @@ timeout(10.seconds)
@@ -42,7 +55,7 @@ object Tests {
 
 }
 
-object BaseSpec extends DefaultRunnableSpec(suite("AWS Spec")(Tests.bucketsSuite))
+object BaseSpec extends DefaultRunnableSpec(suite("AWS Spec")(Tests.bucketsSuite, Tests.objectsSuite))
 
 object Helper {
   import java.nio.file.{ Files }
