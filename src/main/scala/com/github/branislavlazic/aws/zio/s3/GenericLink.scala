@@ -1,5 +1,7 @@
 package com.github.branislavlazic.aws.zio.s3
 
+import java.util.concurrent.CompletableFuture
+
 import zio.{ Task, ZIO }
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
@@ -29,8 +31,14 @@ trait GenericLink {
 object GenericLink {
   trait Service[R] {
     def createClient(region: Region, endpoint: String): Task[S3AsyncClient]
-    // def createBucket(name: String)(implicit client: S3AsyncClient): Task[CreateBucketResponse]
-    // def listBuckets(name: String)(implicit client: S3AsyncClient): Task[ListBucketsResponse]
-    // def listKeys(name: String)(implicit client: S3AsyncClient): Task[List[String]]
+    def createBucket(name: String)(implicit client: S3AsyncClient): Task[CreateBucketResponse]
+    def listBuckets(name: String)(implicit client: S3AsyncClient): Task[ListBucketsResponse]
+    def listBucketObjects(name: String)(implicit client: S3AsyncClient): Task[ListObjectsV2Response]
+    def listBucketObjectsKeys(name: String)(implicit client: S3AsyncClient): Task[List[String]]
+
+    def handleResponse[T](
+      completableFuture: CompletableFuture[T],
+      callback: ZIO[Any, Throwable, T] => Unit
+    ): Unit
   }
 }
