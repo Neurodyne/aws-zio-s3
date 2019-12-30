@@ -44,20 +44,37 @@ object Tests {
     testM("lookup an object") {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val res = for {
-        s3 <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        // out <- aws.service.lookupObject(bucket, prefix, key)(
-        out <- aws.service.listObjectsKeys(bucket, prefix)(s3)
-        _   = println(out)
-      } yield out
+        s3   <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+        out0 <- aws.service.lookupObject(bucket, prefix, key)(s3)
+        out1 <- aws.service.listObjectsKeys(bucket, prefix)(s3)
+        // out <- aws.service.listBucketObjects(bucket, prefix)(s3)
+        _ = println(out0)
+        _ = println(out1)
+      } yield out1
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ timeout(10.seconds),
-    testM("bucket objects") {
-      println(s"Using Region: ${region}, Endpoint: ${endpoint}, Bucket: ${bucket}")
+    } @@ timeout(10.seconds)
+    // testM("bucket objects") {
+    //   println(s"Using Region: ${region}, Endpoint: ${endpoint}, Bucket: ${bucket}")
+    //   val res = for {
+    //     s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+    //     out <- aws.service.listObjectsKeys(bucket, prefix)(s3)
+    //     _   = println(out)
+    //   } yield out
+
+    //   assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
+    // } @@ timeout(10.seconds)
+  )
+  val delSuite = suite("Delete")(
+    testM("list and delete object") {
+      println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val res = for {
-        s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.listObjectsKeys(bucket, prefix)(s3)
-        _   = println(out)
+        s3      <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+        out     <- aws.service.listObjectsKeys(bucket, prefix)(s3)
+        _       = println(out)
+        someKey = out.head
+        res     <- aws.service.delObject(bucket, someKey)(s3)
+        _       = println(res)
       } yield out
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
@@ -69,7 +86,7 @@ object Tests {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.redirectObject(bucket, prefix, key)(s3)
+        out <- aws.service.redirectObject(bucket, prefix, key, url)(s3)
         _   = println(out)
       } yield out
 
@@ -82,6 +99,7 @@ object Tests {
 object BuckSpec  extends DefaultRunnableSpec(suite("Bucket Spec")(Tests.bucketsSuite))
 object ObjSpec   extends DefaultRunnableSpec(suite("Object Spec")(Tests.objectsSuite))
 object RedirSpec extends DefaultRunnableSpec(suite("Redirection Spec")(Tests.objectsSuite))
+object DelSpec   extends DefaultRunnableSpec(suite("Redirection Spec")(Tests.delSuite))
 
 object Helper {
   import java.nio.file.{ Files }
@@ -103,7 +121,8 @@ object Helper {
   }
 
   val aws    = new AwsLink {}
-  val key    = "42x42.jpg"
+  val key    = "original.jpg"
+  val url    = "/blah-blah"
   val prefix = "media/uploads/images/2c713cae-2593-11ea-b06d-6b64da20b1de"
 
 }

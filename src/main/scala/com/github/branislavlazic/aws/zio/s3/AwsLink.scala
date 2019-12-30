@@ -114,7 +114,10 @@ class AwsLink extends GenericLink {
     def lookupObject(buck: String, prefix: String, key: String)(implicit s3: S3AsyncClient): Task[Boolean] =
       for {
         list <- listBucketObjects(buck, prefix)
-        res  = list.contents.contains(key)
+        path = prefix + "/" + key
+        res = list.contents.asScala
+          .filter(_.key == path)
+          .nonEmpty
       } yield res
 
     def redirectObject(buck: String, prefix: String, key: String, url: String)(
@@ -158,6 +161,12 @@ class AwsLink extends GenericLink {
           callback
         )
       }
+
+    def delAllObjects(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit] =
+      for {
+        list <- listObjectsKeys(buck, prefix)
+        del  = list.foreach(key => delObject(buck, key))
+      } yield ()
 
     def handleResponse[T](
       fut: CompletableFuture[T],
