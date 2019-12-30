@@ -80,9 +80,18 @@ class AwsLink extends GenericLink {
         handleResponse(s3.listBuckets(), callback)
       }
 
-    def listBucketObjects(buck: String)(implicit s3: S3AsyncClient): Task[ListObjectsV2Response] =
+    def listBucketObjects(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[ListObjectsV2Response] =
       for {
-        resp <- IO.effect(s3.listObjectsV2(ListObjectsV2Request.builder().bucket(buck).build()))
+        resp <- IO.effect(
+                 s3.listObjectsV2(
+                   ListObjectsV2Request
+                     .builder()
+                     .bucket(buck)
+                     .maxKeys(10)
+                     .prefix(prefix)
+                     .build()
+                 )
+               )
         list <- IO.effectAsync[Throwable, ListObjectsV2Response] { callback =>
                  handleResponse(
                    resp,
@@ -91,15 +100,15 @@ class AwsLink extends GenericLink {
                }
       } yield list
 
-    def listObjectsKeys(buck: String)(implicit s3: S3AsyncClient): Task[List[String]] =
+    def listObjectsKeys(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[List[String]] =
       for {
-        list <- listBucketObjects(buck)
+        list <- listBucketObjects(buck, prefix)
         keys = list.contents.asScala.map(_.key).toList
       } yield keys
 
-    def lookupObject(buck: String, key: String)(implicit s3: S3AsyncClient): Task[Boolean] =
+    def lookupObject(buck: String, prefix: String, key: String)(implicit s3: S3AsyncClient): Task[Boolean] =
       for {
-        list <- listBucketObjects(buck)
+        list <- listBucketObjects(buck, prefix)
         res  = list.contents.contains(key)
       } yield res
 

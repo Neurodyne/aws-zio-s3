@@ -71,17 +71,17 @@ object GenericLink {
     /**
      * List all objects in a Bucket
      */
-    def listBucketObjects(buck: String)(implicit s3: S3AsyncClient): Task[ListObjectsV2Response]
+    def listBucketObjects(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[ListObjectsV2Response]
 
     /**
      * List all object keys in a Bucket
      */
-    def listObjectsKeys(buck: String)(implicit s3: S3AsyncClient): Task[List[String]]
+    def listObjectsKeys(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[List[String]]
 
     /**
      * Look up for an object. True if present
      */
-    def lookupObject(buck: String, key: String)(implicit s3: S3AsyncClient): Task[Boolean]
+    def lookupObject(buck: String, prefix: String, key: String)(implicit s3: S3AsyncClient): Task[Boolean]
 
     /**
      * Put a file with a key into a Bucket

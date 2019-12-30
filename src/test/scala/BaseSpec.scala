@@ -44,8 +44,20 @@ object Tests {
     testM("lookup an object") {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val res = for {
+        s3 <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+        out <- aws.service.lookupObject(bucket, prefix, key)(
+                s3
+              )
+        _ = println(out)
+      } yield out
+
+      assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
+    } @@ timeout(10.seconds),
+    testM("bucket objects") {
+      println(s"Using Region: ${region}, Endpoint: ${endpoint}, Bucket: ${bucket}")
+      val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.lookupObject(bucket, key)(s3)
+        out <- aws.service.listObjectsKeys(bucket, prefix)(s3)
         _   = println(out)
       } yield out
 
@@ -55,7 +67,8 @@ object Tests {
 
 }
 
-object BaseSpec extends DefaultRunnableSpec(suite("AWS Spec")(Tests.bucketsSuite, Tests.objectsSuite))
+object BuckSpec extends DefaultRunnableSpec(suite("Bucket Spec")(Tests.bucketsSuite))
+object ObjSpec  extends DefaultRunnableSpec(suite("Object Spec")(Tests.objectsSuite))
 
 object Helper {
   import java.nio.file.{ Files }
@@ -75,7 +88,9 @@ object Helper {
     Files.createFile(path).toFile
 
   }
-  val aws = new AwsLink {}
-  val key = "2c713cae-2593-11ea-b06d-6b64da20b1de"
+
+  val aws    = new AwsLink {}
+  val key    = "key"
+  val prefix = "media/uploads/images/2c713cae-2593-11ea-b06d-6b64da20b1de"
 
 }
