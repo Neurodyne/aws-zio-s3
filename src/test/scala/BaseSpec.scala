@@ -45,10 +45,9 @@ object Tests {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val res = for {
         s3 <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.lookupObject(bucket, prefix, key)(
-                s3
-              )
-        _ = println(out)
+        // out <- aws.service.lookupObject(bucket, prefix, key)(
+        out <- aws.service.listObjectsKeys(bucket, prefix)(s3)
+        _   = println(out)
       } yield out
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
@@ -65,10 +64,24 @@ object Tests {
     } @@ timeout(10.seconds)
   )
 
+  val redirSuite = suite("Redirection")(
+    testM("set object redirection") {
+      println(s"Using Region: ${region} and Endpoint: ${endpoint}")
+      val res = for {
+        s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+        out <- aws.service.redirectObject(bucket, prefix, key)(s3)
+        _   = println(out)
+      } yield out
+
+      assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
+    } @@ timeout(10.seconds)
+  )
+
 }
 
-object BuckSpec extends DefaultRunnableSpec(suite("Bucket Spec")(Tests.bucketsSuite))
-object ObjSpec  extends DefaultRunnableSpec(suite("Object Spec")(Tests.objectsSuite))
+object BuckSpec  extends DefaultRunnableSpec(suite("Bucket Spec")(Tests.bucketsSuite))
+object ObjSpec   extends DefaultRunnableSpec(suite("Object Spec")(Tests.objectsSuite))
+object RedirSpec extends DefaultRunnableSpec(suite("Redirection Spec")(Tests.objectsSuite))
 
 object Helper {
   import java.nio.file.{ Files }
@@ -90,7 +103,7 @@ object Helper {
   }
 
   val aws    = new AwsLink {}
-  val key    = "key"
+  val key    = "42x42.jpg"
   val prefix = "media/uploads/images/2c713cae-2593-11ea-b06d-6b64da20b1de"
 
 }

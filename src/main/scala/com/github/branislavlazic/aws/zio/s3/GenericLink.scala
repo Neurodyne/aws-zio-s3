@@ -22,6 +22,7 @@ import zio.{ Task }
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.{
+  CopyObjectResponse,
   CreateBucketResponse,
   DeleteBucketResponse,
   DeleteObjectResponse,
@@ -82,6 +83,13 @@ object GenericLink {
      * Look up for an object. True if present
      */
     def lookupObject(buck: String, prefix: String, key: String)(implicit s3: S3AsyncClient): Task[Boolean]
+
+    /**
+     * Setup redirection for an object
+     */
+    def redirectObject(buck: String, prefix: String, key: String, url: String)(
+      implicit s3: S3AsyncClient
+    ): Task[CopyObjectResponse]
 
     /**
      * Put a file with a key into a Bucket

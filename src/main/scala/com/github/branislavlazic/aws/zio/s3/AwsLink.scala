@@ -25,6 +25,8 @@ import zio.{ IO, Task }
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.{
+  CopyObjectRequest,
+  CopyObjectResponse,
   CreateBucketRequest,
   CreateBucketResponse,
   DeleteBucketRequest,
@@ -39,6 +41,8 @@ import software.amazon.awssdk.services.s3.model.{
   PutObjectRequest,
   PutObjectResponse
 }
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 class AwsLink extends GenericLink {
 
@@ -87,7 +91,7 @@ class AwsLink extends GenericLink {
                    ListObjectsV2Request
                      .builder()
                      .bucket(buck)
-                     .maxKeys(10)
+                     //  .maxKeys(10)
                      .prefix(prefix)
                      .build()
                  )
@@ -104,6 +108,7 @@ class AwsLink extends GenericLink {
       for {
         list <- listBucketObjects(buck, prefix)
         keys = list.contents.asScala.map(_.key).toList
+        _    = println(keys.size)
       } yield keys
 
     def lookupObject(buck: String, prefix: String, key: String)(implicit s3: S3AsyncClient): Task[Boolean] =
@@ -111,6 +116,24 @@ class AwsLink extends GenericLink {
         list <- listBucketObjects(buck, prefix)
         res  = list.contents.contains(key)
       } yield res
+
+    def redirectObject(buck: String, prefix: String, key: String, url: String)(
+      implicit s3: S3AsyncClient
+    ): Task[CopyObjectResponse] = {
+      val srcUrl = URLEncoder.encode(buck + prefix + key, StandardCharsets.UTF_8.toString)
+      for {
+        req <- IO.effect(
+                CopyObjectRequest
+                  .builder()
+                  .copySource(srcUrl)
+                  .websiteRedirectLocation(url)
+                  .build()
+              )
+        rsp <- IO.effectAsync[Throwable, CopyObjectResponse] { callback =>
+                handleResponse(s3.copyObject(req), callback)
+              }
+      } yield rsp
+    }
 
     def putObject(buck: String, key: String, file: String)(implicit s3: S3AsyncClient): Task[PutObjectResponse] =
       IO.effectAsync[Throwable, PutObjectResponse] { callback =>
@@ -131,7 +154,7 @@ class AwsLink extends GenericLink {
     def delObject(buck: String, key: String)(implicit s3: S3AsyncClient): Task[DeleteObjectResponse] =
       IO.effectAsync[Throwable, DeleteObjectResponse] { callback =>
         handleResponse(
-          s3.deleteObject(DeleteObjectRequest.builder().bucket(buck).key(key).build()),
+          s3.deleteObject(DeleteObjectRequest.builder().bucket(buck).key(key) build ()),
           callback
         )
       }
