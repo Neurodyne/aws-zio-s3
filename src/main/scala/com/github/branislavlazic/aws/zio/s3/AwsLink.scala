@@ -41,8 +41,6 @@ import software.amazon.awssdk.services.s3.model.{
   PutObjectRequest,
   PutObjectResponse
 }
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 class AwsLink extends GenericLink {
 
@@ -120,23 +118,46 @@ class AwsLink extends GenericLink {
           .nonEmpty
       } yield res
 
-    def redirectObject(buck: String, prefix: String, key: String, url: String)(
+    def redirectObject(srcURL: String, dstURL: String)(
       implicit s3: S3AsyncClient
-    ): Task[CopyObjectResponse] = {
-      val srcUrl = URLEncoder.encode(buck + prefix + key, StandardCharsets.UTF_8.toString)
+    ): Task[CopyObjectResponse] =
       for {
         req <- IO.effect(
                 CopyObjectRequest
                   .builder()
-                  .copySource(srcUrl)
-                  .websiteRedirectLocation(url)
+                  .copySource(srcURL)
+                  .websiteRedirectLocation(dstURL)
                   .build()
               )
-        rsp <- IO.effectAsync[Throwable, CopyObjectResponse] { callback =>
-                handleResponse(s3.copyObject(req), callback)
-              }
+        _ = println(" >>>>> Redir req ok")
+        rsp <- IO
+                .effectAsync[Throwable, CopyObjectResponse] { callback =>
+                  handleResponse(s3.copyObject(req), callback)
+                }
+                .mapError(_ => new Throwable("Failed to copy object"))
+        _ = println(" >>>>> Redir response ok")
+
       } yield rsp
-    }
+
+    def redirectAllObjects(buck: String, prefix: String, url: String)(
+      implicit s3: S3AsyncClient
+    ): Task[Unit] =
+      for {
+        keys <- listObjectsKeys(buck, prefix)
+        _    = println("*** Keys List ***")
+        _    = println(keys)
+
+        urls = keys.map("s3://develop-assets/" + prefix + url + _.diff(prefix))
+
+        _     = println("*** Redirection List ***")
+        _     = println(urls)
+        links = keys zip urls
+        _     = println(" >>>> Starting to traverse")
+        _ <- Task.traverse(links) { i =>
+              redirectObject(i._1, i._2)
+            }
+
+      } yield ()
 
     def putObject(buck: String, key: String, file: String)(implicit s3: S3AsyncClient): Task[PutObjectResponse] =
       IO.effectAsync[Throwable, PutObjectResponse] { callback =>
@@ -164,8 +185,8 @@ class AwsLink extends GenericLink {
 
     def delAllObjects(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit] =
       for {
-        list <- listObjectsKeys(buck, prefix)
-        _ <- Task.traverse(list) { i =>
+        keys <- listObjectsKeys(buck, prefix)
+        _ <- Task.traverse(keys) { i =>
               delObject(buck, i)
             }
       } yield ()

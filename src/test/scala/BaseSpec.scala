@@ -84,7 +84,7 @@ object Tests {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.redirectObject(bucket, prefix, key, url)(s3)
+        out <- aws.service.redirectAllObjects(bucket, prefix, url)(s3)
         _   = println(out)
       } yield out
 
@@ -96,7 +96,7 @@ object Tests {
 
 object BuckSpec  extends DefaultRunnableSpec(suite("Bucket Spec")(Tests.bucketsSuite))
 object ObjSpec   extends DefaultRunnableSpec(suite("Object Spec")(Tests.objectsSuite))
-object RedirSpec extends DefaultRunnableSpec(suite("Redirection Spec")(Tests.objectsSuite))
+object RedirSpec extends DefaultRunnableSpec(suite("Redirection Spec")(Tests.redirSuite))
 object DelSpec   extends DefaultRunnableSpec(suite("Redirection Spec")(Tests.delSuite))
 
 object Helper {
@@ -120,7 +120,7 @@ object Helper {
 
   val aws    = new AwsLink {}
   val key    = "original.jpg"
-  val url    = "/blah-blah"
-  val prefix = "media/uploads/images/2c713cae-2593-11ea-b06d-6b64da20b1de"
+  val url    = "blah177-"
+  val prefix = "media/uploads/images/ee912008-2e38-11ea-89d3-45d08ddd3995/"
 
 }

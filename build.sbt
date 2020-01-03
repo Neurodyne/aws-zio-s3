@@ -48,6 +48,7 @@ lazy val commonSettings =
     licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
     homepage := Some(url("https://github.com/BranislavLazic/aws-zio-s3")),
     scalacOptions --= Seq(
+      "-Xfatal-warnings",
       "-Ywarn-value-discard"
     ),
     Compile / unmanagedSourceDirectories := Seq((Compile / scalaSource).value),
