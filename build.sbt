@@ -18,7 +18,7 @@ lazy val `aws-zio-s3` =
 // *****************************************************************************
 
 val zioVersion = "1.0.0-RC17"
-val awsVersion = "2.10.41"
+val awsVersion = "2.10.42"
 
 lazy val awsDeps = libraryDependencies ++= Seq("software.amazon.awssdk" % "s3" % awsVersion)
 

@@ -107,7 +107,7 @@ object GenericLink {
     def delObject(buck: String, key: String)(implicit s3: S3AsyncClient): Task[DeleteObjectResponse]
 
     /**
-     * Delete all objects 
+     * Delete all objects
      */
     def delAllObjects(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit]
 

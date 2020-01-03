@@ -41,41 +41,39 @@ object Tests {
   )
 
   val objectsSuite = suite("AWS S3 Objects suite")(
-    testM("lookup an object") {
+    testM("lookup an object. True if present") {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val res = for {
-        s3   <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out0 <- aws.service.lookupObject(bucket, prefix, key)(s3)
-        out1 <- aws.service.listObjectsKeys(bucket, prefix)(s3)
-        // out <- aws.service.listBucketObjects(bucket, prefix)(s3)
-        _ = println(out0)
-        _ = println(out1)
-      } yield out1
+        s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+        out <- aws.service.lookupObject(bucket, prefix, key)(s3)
+        _   = println(out)
+      } yield out
+
+      assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
+    } @@ timeout(10.seconds),
+    testM("list all keys, related to a specific prefix") {
+      println(s"Using Region: ${region}, Endpoint: ${endpoint}, Bucket: ${bucket}")
+      val res = for {
+        s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+        out <- aws.service.listObjectsKeys(bucket, prefix)(s3)
+        _   = println(out)
+      } yield out
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
     } @@ timeout(10.seconds)
-    // testM("bucket objects") {
-    //   println(s"Using Region: ${region}, Endpoint: ${endpoint}, Bucket: ${bucket}")
-    //   val res = for {
-    //     s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-    //     out <- aws.service.listObjectsKeys(bucket, prefix)(s3)
-    //     _   = println(out)
-    //   } yield out
-
-    //   assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    // } @@ timeout(10.seconds)
   )
   val delSuite = suite("Delete")(
     testM("list and delete object") {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val res = for {
-        s3      <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out     <- aws.service.listObjectsKeys(bucket, prefix)(s3)
-        _       = println(out)
-        someKey = out.head
-        res     <- aws.service.delObject(bucket, someKey)(s3)
-        _       = println(res)
-      } yield out
+        s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+        out <- aws.service.listObjectsKeys(bucket, prefix)(s3)
+        _   = println(out)
+        _   = println("**** Carefully ! This method will ACTUALLY remove your AWS content !!!! ***")
+        _   = println("*** If you REALLY wanna remove it, uncomment the line below ***")
+        // _   <- aws.service.delAllObjects(bucket, prefix)(s3)
+
+      } yield ()
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
     } @@ timeout(10.seconds)

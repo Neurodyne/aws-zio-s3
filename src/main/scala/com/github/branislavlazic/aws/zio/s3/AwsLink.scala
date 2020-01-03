@@ -165,7 +165,9 @@ class AwsLink extends GenericLink {
     def delAllObjects(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit] =
       for {
         list <- listObjectsKeys(buck, prefix)
-        del  = list.foreach(key => delObject(buck, key))
+        _ <- Task.traverse(list) { i =>
+              delObject(buck, i)
+            }
       } yield ()
 
     def handleResponse[T](
