@@ -42,6 +42,9 @@ import software.amazon.awssdk.services.s3.model.{
   PutObjectResponse
 }
 
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+
 class AwsLink extends GenericLink {
 
   val service = new GenericLink.Service[Any] {
@@ -118,46 +121,55 @@ class AwsLink extends GenericLink {
           .nonEmpty
       } yield res
 
-    def redirectObject(srcURL: String, dstURL: String)(
+    def redirectObject(buck: String, prefix: String, url: String)(
       implicit s3: S3AsyncClient
-    ): Task[CopyObjectResponse] =
+    ): Task[CopyObjectResponse] = {
+      val src = URLEncoder.encode(buck + "/" + prefix, StandardCharsets.UTF_8.toString)
+      val dst = URLEncoder.encode(buck + "/" + prefix + url, StandardCharsets.UTF_8.toString)
       for {
         req <- IO.effect(
                 CopyObjectRequest
                   .builder()
-                  .copySource(srcURL)
-                  .websiteRedirectLocation(dstURL)
+                  .copySource(src)
+                  .destinationBucket(buck)
+                  .websiteRedirectLocation(dst)
                   .build()
               )
-        _ = println(" >>>>> Redir req ok")
+        // _ = println(" >>>>> Redir req ok")
         rsp <- IO
                 .effectAsync[Throwable, CopyObjectResponse] { callback =>
                   handleResponse(s3.copyObject(req), callback)
                 }
-                .mapError(_ => new Throwable("Failed to copy object"))
-        _ = println(" >>>>> Redir response ok")
+                .mapError(_ => new Throwable("Failed Processing CopyObjectResponse"))
+        // _ = println(" >>>>> Redir response ok")
 
       } yield rsp
 
-    def redirectAllObjects(buck: String, prefix: String, url: String)(
-      implicit s3: S3AsyncClient
-    ): Task[Unit] =
-      for {
-        keys <- listObjectsKeys(buck, prefix)
-        _    = println("*** Keys List ***")
-        _    = println(keys)
+    }
 
-        urls = keys.map("s3://develop-assets/" + prefix + url + _.diff(prefix))
+    // def redirectAllObjects(buck: String, prefix: String, url: String)(
+    //   implicit s3: S3AsyncClient
+    // ): Task[Unit] =
+    //   for {
+    //     keys <- listObjectsKeys(buck, prefix)
+    //     _    = println("*** Keys List ***")
+    //     _    = println(keys)
 
-        _     = println("*** Redirection List ***")
-        _     = println(urls)
-        links = keys zip urls
-        _     = println(" >>>> Starting to traverse")
-        _ <- Task.traverse(links) { i =>
-              redirectObject(i._1, i._2)
-            }
+    //     urls = keys.map("s3://develop-assets/" + prefix + url + _.diff(prefix))
 
-      } yield ()
+    //     _     = println("*** Redirection List ***")
+    //     _     = println(urls)
+    //     links = keys zip urls
+    //     _     = println(" >>>> Starting to traverse")
+    //     // _ <- Task.traverse(links) { i =>
+    //     //       redirectObject(i._1, i._2)
+    //     //     }
+    //     _ <- Task.traverse(0 to 4) { i =>
+    //           redirectObject(keys(i), urls(i))
+
+    //         }
+
+    //   } yield ()
 
     def putObject(buck: String, key: String, file: String)(implicit s3: S3AsyncClient): Task[PutObjectResponse] =
       IO.effectAsync[Throwable, PutObjectResponse] { callback =>

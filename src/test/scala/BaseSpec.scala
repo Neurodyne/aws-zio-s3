@@ -84,7 +84,7 @@ object Tests {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.redirectAllObjects(bucket, prefix, url)(s3)
+        out <- aws.service.redirectObject(bucket, prefix, url)(s3)
         _   = println(out)
       } yield out
 
